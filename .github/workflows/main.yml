@@ -6,14 +6,11 @@ on:
     - cron: "0 */5 * * *"
 
 jobs:
-  permissions:
-    contents: read
-    pages: write
   update:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
