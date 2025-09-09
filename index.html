@@ -1,0 +1,167 @@
+ <!DOCTYPE html>
+ <html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Розклад групи ТК-22-01</title>
+</head>
+<style>
+    /*<meta name="viewport" content="width=device-width, initial-scale=1">*/
+
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-bottom: 20px;
+        table-layout: fixed;
+        }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background-color: #f0f0f0; }
+    caption { font-weight: bold; font-size: 1.2em; margin-bottom: 10px; }
+
+    th:nth-child(1), td:nth-child(1) { width: 5%; }   /* № */
+    th:nth-child(2), td:nth-child(2) { width: 20%; }  /* Час */
+    th:nth-child(3), td:nth-child(3) { width: 35%; }  /* Предмет */
+    th:nth-child(4), td:nth-child(4) { width: 10%; }  /* Аудиторія */
+    th:nth-child(5), td:nth-child(5) { width: 15%; }  /* Викладач */
+
+    #date_dropdown{
+        width: 230px;
+        height: 50px;
+        font-size: 20px;
+        margin-bottom: 20px;
+    }
+  </style>
+<body>
+
+<p style="font-size:200%;text-align:center;"><i>Розклад занять групи ТК-22-01</i></p>
+<p style="font-size:150%;text-align:center;" id="week-date"></p>
+
+
+<div style="text-align:center">
+    <select style="text-align:center;" name="День" id="date_dropdown">
+        <option value="today">Сьогодні</option>
+        <option value="this_week">Поточний тиждень</option>
+        <option value="week_1_3">Весь тиждень (1,3)</option>
+        <option value="week_2_4">Весь тиждень (2,4)</option>
+        <option value="week_all">Весь тиждень (1,2,3,4)</option>
+    </select>
+</div>
+
+<div id="table"></div>
+<p id="weekend_text1" style="font-size:250%;text-align:center;"></p>
+<p id="weekend_text2" style="text-align:center;"></p>
+
+<p>Дата останньої синхронізації розкладу:</p>
+<p id="last_sync_time"></p>
+
+
+<script>
+    const BASE_MONDAY = new Date(2025, 8, 1) // дата ПОНЕДІЛКА першого тижня (рік, місяці[0-11], день)
+                                             // 1 вересня
+
+    DAY_NAMES_UA = {mon:'Понеділок', tue:'Вівторок', wed:'Середа', thu:'Четвер', fri:'Пʼятниця'};
+    const table_cont = document.getElementById("table");
+
+    const dropdown = document.getElementById("date_dropdown");
+    dropdown.value = "today";
+    loadSchedule("today");
+
+    dropdown.addEventListener("change", function() {
+        const selected = dropdown.value;
+        table_cont.innerHTML = ''; //очищує таблицю
+        loadSchedule(selected);
+    })
+
+    async function loadSchedule(date_select){
+        const today_date = new Date();
+        const date_UA = format_date_UA(today_date);
+        const week_UA = get_curr_week(today_date) === "even" ? "Тиждень 2,4 (знаменник)": "Тиждень 1,3 (чисельник)"
+        document.getElementById("week-date").innerHTML = "Сьогодні "+date_UA+". "+week_UA;
+
+        const response = await fetch("schedule.json");
+        const schedule = await response.json();
+        const metadata = schedule["metadata"];
+        document.getElementById("last_sync_time").innerHTML = new Date(metadata.Time * 1000).toLocaleString('uk-UA', {
+                                                                                                weekday: 'long',
+                                                                                                day: '2-digit',
+                                                                                                month: '2-digit',
+                                                                                                year: 'numeric',
+                                                                                                hour: '2-digit',
+                                                                                                minute: '2-digit',
+                                                                                                second: '2-digit'
+                                                                                                });
+        const days = Object.keys(schedule).filter(key => key !== "metadata")
+        const curr_day = today_date.toLocaleString("en-UK", {weekday:"short"}).toLowerCase();
+        console.log(curr_day);
+        if (date_select === "today") render_table(schedule, curr_day, date_select, today_date);
+        else {
+            days.forEach(day => {
+                render_table(schedule, day, date_select, today_date);
+            });
+        }
+    }
+
+
+    function render_table(schedule, day, date_select, today_date){
+        const weekend_text1 = document.getElementById("weekend_text1");
+        const weekend_text2 = document.getElementById("weekend_text2");
+        if (!schedule[day]) {
+            weekend_text1.innerHTML = "Ти що? Які пари? Сьогодні вихідний!";
+            weekend_text2.innerHTML = "(Або ситуація вийшла з під контролю та розклад зламався...)";
+            return;
+        }
+        weekend_text1.innerHTML = ""
+        weekend_text2.innerHTML = ""
+        lessons = schedule[day];
+
+        const table = document.createElement("table");
+        const caption = document.createElement("caption");
+        caption.textContent = DAY_NAMES_UA[day];
+        table.appendChild(caption);
+
+        const thead = document.createElement("thead");
+        thead.innerHTML = '<tr><th>№</th><th>Час</th><th>Предмет</th><th>Аудиторія</th><th>Викладач</th></tr>';
+        table.appendChild(thead);
+        const tbody = document.createElement("tbody");
+
+        week2 = "";
+        if (date_select === "today" || date_select === "this_week") week = get_curr_week(today_date);
+        else if (date_select === "week_1_3") week = "odd";
+        else if (date_select === "week_2_4") week = "even";
+        else if (date_select === "week_all") {
+            week = "odd";
+            week2 = "even";
+        }
+
+        lessons.forEach(lesson => {
+            if(lesson.weeks === week || lesson.weeks === week2 || lesson.weeks === "all") {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${parseInt(lesson.num)}</td>
+                                <td>${lesson.time}</td>
+                                <td>${lesson.subject}</td>
+                                <td>${lesson.room}</td>
+                                <td>${lesson.teacher}</td>`;
+                tbody.appendChild(tr);
+            }
+        });
+
+        table.appendChild(tbody);
+        table_cont.appendChild(table);
+    }
+
+
+
+
+    function get_curr_week(date){
+        const week_num = Math.floor((date - BASE_MONDAY)/604800000); //кількість тижнів яка прийшла від BASE_MONDAY
+        return week_num % 2 === 1 ? "even":"odd";
+    }
+    function format_date_UA (date){
+        return date.toLocaleString('uk-UA', {weekday:'long', day:'2-digit', month:'2-digit', year:'numeric'});
+    }
+
+</script>
+
+</body>
+</html>
+
