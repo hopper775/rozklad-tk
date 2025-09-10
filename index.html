@@ -41,9 +41,10 @@
     <select style="text-align:center;" name="День" id="date_dropdown">
         <option value="today">Сьогодні</option>
         <option value="this_week">Поточний тиждень</option>
+        <option value="next_week">Наступний тиждень</option>
         <option value="week_1_3">Весь тиждень (1,3)</option>
         <option value="week_2_4">Весь тиждень (2,4)</option>
-        <option value="week_all">Весь тиждень (1,2,3,4)</option>
+        <option value="week_all">Весь розклад (1,2,3,4)</option>
     </select>
 </div>
 
@@ -126,6 +127,7 @@
 
         week2 = "";
         if (date_select === "today" || date_select === "this_week") week = get_curr_week(today_date);
+        else if (date_select === "next_week") week = get_curr_week(today_date) === "even" ? "odd": "even"; 
         else if (date_select === "week_1_3") week = "odd";
         else if (date_select === "week_2_4") week = "even";
         else if (date_select === "week_all") {
@@ -148,9 +150,6 @@
         table.appendChild(tbody);
         table_cont.appendChild(table);
     }
-
-
-
 
     function get_curr_week(date){
         const week_num = Math.floor((date - BASE_MONDAY)/604800000); //кількість тижнів яка прийшла від BASE_MONDAY
