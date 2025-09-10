@@ -30,6 +30,10 @@
         font-size: 20px;
         margin-bottom: 20px;
     }
+    .noscale {
+        -webkit-text-size-adjust: none;
+        text-size-adjust: none;
+    }
   </style>
 <body>
 
@@ -48,13 +52,19 @@
     </select>
 </div>
 
-<div id="table"></div>
+<div class="noscale" id="table"></div>
+
 <p id="weekend_text1" style="font-size:250%;text-align:center;"></p>
 <p id="weekend_text2" style="text-align:center;"></p>
 
-<p>Дата останньої синхронізації розкладу:</p>
-<p id="last_sync_time"></p>
+<p class="noscale">Дата останньої синхронізації розкладу:</p>
+<p class="noscale" id="last_sync_time"></p>
 
+<hr>
+
+<p class="noscale" style="font-size:14px;text-align:right;">
+    Створив Фігол В.Т. ексклюзивно для групи ТК-22-01.
+</p>
 
 <script>
     const BASE_MONDAY = new Date(2025, 8, 1) // дата ПОНЕДІЛКА першого тижня (рік, місяці[0-11], день)
@@ -75,9 +85,10 @@
 
     async function loadSchedule(date_select){
         const today_date = new Date();
+
         const date_UA = format_date_UA(today_date);
         const week_UA = get_curr_week(today_date) === "even" ? "Тиждень 2,4 (знаменник)": "Тиждень 1,3 (чисельник)"
-        document.getElementById("week-date").innerHTML = "Сьогодні "+date_UA+". "+week_UA;
+        document.getElementById("week-date").innerHTML = `<i>Сьогодні ${date_UA}. ${week_UA}</i>`;
 
         const response = await fetch("schedule.json");
         const schedule = await response.json();
@@ -107,8 +118,8 @@
         const weekend_text1 = document.getElementById("weekend_text1");
         const weekend_text2 = document.getElementById("weekend_text2");
         if (!schedule[day]) {
-            weekend_text1.innerHTML = "Ти що? Які пари? Сьогодні вихідний!";
-            weekend_text2.innerHTML = "(Або ситуація вийшла з під контролю та розклад зламався...)";
+            weekend_text1.innerHTML = "<i><b>Ти що? Які пари? Сьогодні вихідний!</b></i>";
+            weekend_text2.innerHTML = "<i>(Або ситуація вийшла з під контролю та розклад зламався...)</i>";
             return;
         }
         weekend_text1.innerHTML = ""
