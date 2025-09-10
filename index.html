@@ -13,7 +13,7 @@
     <meta property="og:type" content="website">
 </head>
 <style>
-    /*<meta name="viewport" content="width=device-width, initial-scale=1">*/
+    /*<meta name="viewport" content="width=device-width, initial-scale=3">*/
 
     body { font-family: Arial, sans-serif; margin: 20px; }
     table {
@@ -22,9 +22,9 @@
         margin-bottom: 20px;
         table-layout: fixed;
         }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; font-size: 18px;}
     th { background-color: #f0f0f0; }
-    caption { font-weight: bold; font-size: 1.2em; margin-bottom: 10px; }
+    caption { font-size: 25px; margin-bottom: 10px; }
 
     th:nth-child(1), td:nth-child(1) { width: 5%; }   /* № */
     th:nth-child(2), td:nth-child(2) { width: 20%; }  /* Час */
@@ -41,6 +41,11 @@
     .noscale {
         -webkit-text-size-adjust: none;
         text-size-adjust: none;
+    }
+    .highilight{
+        font-weight: bold;
+        font-style: italic;
+        /*background-color: #f5f5f5;*/
     }
   </style>
 <body>
@@ -92,6 +97,7 @@
     })
 
     async function loadSchedule(date_select){
+        //const today_date = new Date(2025, 8, 16, 18, 40);
         const today_date = new Date();
 
         const date_UA = format_date_UA(today_date);
@@ -116,7 +122,7 @@
 
         document.getElementById("last_sync_time").innerHTML = `${last_sync_date_str} (~${Math.floor(time_from_last_sync)} хвилин тому).`;
         const days = Object.keys(schedule).filter(key => key !== "metadata")
-        const curr_day = today_date.toLocaleString("en-UK", {weekday:"short"}).toLowerCase();
+        const curr_day = format_date_3let_weekday(today_date);
 
         if (date_select === "today") render_table(schedule, curr_day, date_select, today_date);
         else {
@@ -137,12 +143,12 @@
         }
         weekend_text1.innerHTML = ""
         weekend_text2.innerHTML = ""
+        
         lessons = schedule[day];
 
         const table = document.createElement("table");
         const caption = document.createElement("caption");
         caption.textContent = DAY_NAMES_UA[day];
-        table.appendChild(caption);
 
         const thead = document.createElement("thead");
         thead.innerHTML = '<tr><th>№</th><th>Час</th><th>Предмет</th><th>Аудиторія</th><th>Викладач</th></tr>';
@@ -160,8 +166,14 @@
         }
 
         lessons.forEach(lesson => {
+            const tr = document.createElement('tr');
+            if (day === format_date_3let_weekday(today_date)&&(date_select === "this_week"||
+               is_time_in_range(lesson.time, today_date))) {
+                    caption.classList.add("highilight");
+                    tr.classList.add("highilight");
+               }
             if(lesson.weeks === week || lesson.weeks === week2 || lesson.weeks === "all") {
-                const tr = document.createElement('tr');
+                
                 tr.innerHTML = `<td>${parseInt(lesson.num)}</td>
                                 <td>${lesson.time}</td>
                                 <td>${lesson.subject}</td>
@@ -170,7 +182,7 @@
                 tbody.appendChild(tr);
             }
         });
-
+        table.appendChild(caption);
         table.appendChild(tbody);
         table_cont.appendChild(table);
     }
@@ -182,7 +194,26 @@
     function format_date_UA (date){
         return date.toLocaleString('uk-UA', {weekday:'long', day:'2-digit', month:'2-digit', year:'numeric'});
     }
+    function format_date_3let_weekday(date) {
+        return date.toLocaleString("en-UK", {weekday:"short"}).toLowerCase();
+    }
+    function is_time_in_range(lesson_time, curr_date) {
+        const OFFSET = 5; //за скільки хв до початку пари ряд таблиці виділиться
+                          //та скільки хв пара буде виділена після кінця
 
+        const start = lesson_time.split("-")[0].split(":");
+        const end = lesson_time.split("-")[1].split(":");
+        
+        const year = curr_date.getFullYear();
+        const month = curr_date.getMonth();
+        const day = curr_date.getDate();
+
+        const start_date = new Date(year, month, day, start[0], start[1] - OFFSET);
+        const end_date = new Date(year, month, day, end[0], (parseInt(end[1]) + OFFSET));
+        
+        if (end_date > start_date) console.log("midnight crosed");
+        return curr_date > start_date && curr_date < end_date;
+    }
 </script>
 
 </body>
