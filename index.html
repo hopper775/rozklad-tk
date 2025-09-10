@@ -57,13 +57,13 @@
 <p id="weekend_text1" style="font-size:250%;text-align:center;"></p>
 <p id="weekend_text2" style="text-align:center;"></p>
 
-<p class="noscale">Дата останньої синхронізації розкладу:</p>
+<p class="noscale">Остання синхронізаці розкладу відбулася в:</p>
 <p class="noscale" id="last_sync_time"></p>
 
 <hr>
 
 <p class="noscale" style="font-size:14px;text-align:right;">
-    Створив Фігол В.Т. ексклюзивно для групи ТК-22-01.
+    <i>Створив Фігол В.Т. ексклюзивно для групи ТК-22-01.</i>
 </p>
 
 <script>
@@ -93,15 +93,20 @@
         const response = await fetch("schedule.json");
         const schedule = await response.json();
         const metadata = schedule["metadata"];
-        document.getElementById("last_sync_time").innerHTML = new Date(metadata.Time * 1000).toLocaleString('uk-UA', {
-                                                                                                weekday: 'long',
-                                                                                                day: '2-digit',
-                                                                                                month: '2-digit',
-                                                                                                year: 'numeric',
-                                                                                                hour: '2-digit',
-                                                                                                minute: '2-digit',
-                                                                                                second: '2-digit'
-                                                                                                });
+        const last_sync_date = new Date(metadata.Time * 1000);
+        const last_sync_date_str = last_sync_date.toLocaleString('uk-UA', {
+                                                                            weekday: 'long',
+                                                                            day: '2-digit',
+                                                                            month: '2-digit',
+                                                                            year: 'numeric',
+                                                                            hour: '2-digit',
+                                                                            minute: '2-digit',
+                                                                            second: '2-digit'
+                                                                            });
+                                                                        
+        const time_from_last_sync = (today_date - last_sync_date)/3600000;
+
+        document.getElementById("last_sync_time").innerHTML = `${last_sync_date_str} (~${Math.floor(time_from_last_sync)} години тому).`;
         const days = Object.keys(schedule).filter(key => key !== "metadata")
         const curr_day = today_date.toLocaleString("en-UK", {weekday:"short"}).toLowerCase();
         console.log(curr_day);
