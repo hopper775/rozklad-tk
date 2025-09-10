@@ -211,7 +211,6 @@
         const start_date = new Date(year, month, day, start[0], start[1] - OFFSET);
         const end_date = new Date(year, month, day, end[0], (parseInt(end[1]) + OFFSET));
         
-        if (end_date > start_date) console.log("midnight crosed");
         return curr_date > start_date && curr_date < end_date;
     }
 </script>
