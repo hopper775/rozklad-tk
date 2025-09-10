@@ -112,9 +112,9 @@
                                                                             second: '2-digit'
                                                                             });
                                                                         
-        const time_from_last_sync = (today_date - last_sync_date)/3600000;
+        const time_from_last_sync = (today_date - last_sync_date)/60000;
 
-        document.getElementById("last_sync_time").innerHTML = `${last_sync_date_str} (~${Math.floor(time_from_last_sync)} години тому).`;
+        document.getElementById("last_sync_time").innerHTML = `${last_sync_date_str} (~${Math.floor(time_from_last_sync)} хвилин тому).`;
         const days = Object.keys(schedule).filter(key => key !== "metadata")
         const curr_day = today_date.toLocaleString("en-UK", {weekday:"short"}).toLowerCase();
         console.log(curr_day);
