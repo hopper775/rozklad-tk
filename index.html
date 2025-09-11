@@ -88,14 +88,28 @@
 <script>
     const BASE_MONDAY = new Date(2025, 8, 1) // дата ПОНЕДІЛКА першого тижня (рік, місяці[0-11], день)
                                              // 1 вересня
+    const OFFSET = 5; //за скільки хв до початку пари ряд таблиці виділиться
+                      //та скільки хв пара буде виділена після кінця
+
+    //const today_date = new Date(2025, 8, 24, 21, 0);
+    const today_date = new Date();
 
     DAY_NAMES_UA = {mon:'Понеділок', tue:'Вівторок', wed:'Середа', thu:'Четвер', fri:'Пʼятниця'};
     const table_cont = document.getElementById("table");
 
-    const dropdown = document.getElementById("date_dropdown");
-    dropdown.value = "today";
-    loadSchedule("today");
+    const date_UA = format_date_UA(today_date);
+    const week_UA = get_curr_week(today_date) === "even" ? "Тиждень 2,4 (знаменник)": "Тиждень 1,3 (чисельник)"
+    document.getElementById("week-date").innerHTML = `<i>Сьогодні ${date_UA}. ${week_UA}</i>`;
 
+
+    const dropdown = document.getElementById("date_dropdown");
+    if (is_time_in_range("00:00-20:30", today_date)){
+        dropdown.value = "today";
+        loadSchedule("today");
+    } else {
+        dropdown.value = "this_week";
+        loadSchedule("this_week");
+    }
     dropdown.addEventListener("change", function() {
         const selected = dropdown.value;
         table_cont.innerHTML = ''; //очищує таблицю
@@ -103,13 +117,6 @@
     })
 
     async function loadSchedule(date_select){
-        //const today_date = new Date(2025, 8, 24, 16, 0);
-        const today_date = new Date();
-
-        const date_UA = format_date_UA(today_date);
-        const week_UA = get_curr_week(today_date) === "even" ? "Тиждень 2,4 (знаменник)": "Тиждень 1,3 (чисельник)"
-        document.getElementById("week-date").innerHTML = `<i>Сьогодні ${date_UA}. ${week_UA}</i>`;
-
         const response = await fetch("schedule.json");
         const schedule = await response.json();
         const metadata = schedule["metadata"];
@@ -207,8 +214,6 @@
         return date.toLocaleString("en-UK", {weekday:"short"}).toLowerCase();
     }
     function is_time_in_range(lesson_time, curr_date) {
-        const OFFSET = 5; //за скільки хв до початку пари ряд таблиці виділиться
-                          //та скільки хв пара буде виділена після кінця
 
         const start = lesson_time.split("-")[0].split(":");
         const end = lesson_time.split("-")[1].split(":");
