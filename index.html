@@ -63,6 +63,7 @@
 <div style="text-align:center">
     <select style="text-align:center;" name="День" id="date_dropdown">
         <option value="today">Сьогодні</option>
+        <option value="tomorrow">Завтра</option>
         <option value="this_week">Поточний тиждень</option>
         <option value="next_week">Наступний тиждень</option>
         <option value="week_1_3">Весь тиждень (1,3)</option>
@@ -91,7 +92,7 @@
     const OFFSET = 5; //за скільки хв до початку пари ряд таблиці виділиться
                       //та скільки хв пара буде виділена після кінця
 
-    //const today_date = new Date(2025, 8, 24, 21, 0);
+    //const today_date = new Date(2025, 9, 3, 22, 0);
     const today_date = new Date();
 
     DAY_NAMES_UA = {mon:'Понеділок', tue:'Вівторок', wed:'Середа', thu:'Четвер', fri:'Пʼятниця'};
@@ -101,14 +102,16 @@
     const week_UA = get_curr_week(today_date) === "even" ? "Тиждень 2,4 (знаменник)": "Тиждень 1,3 (чисельник)"
     document.getElementById("week-date").innerHTML = `<i>Сьогодні ${date_UA}. ${week_UA}</i>`;
 
-
+    const week_day = today_date.getDay(); 
+    // якщо сьогодні пн - вт та не пізніше 20;30 то буде розклад на сьогодні. Після 20;30 буде розкладна на завтра
+    // якщо субота, неділя або п'тниця незалежно від часу буде розклад на сьогодні
     const dropdown = document.getElementById("date_dropdown");
-    if (is_time_in_range("00:00-20:30", today_date)){
+    if (is_time_in_range("00:00-20:30", today_date) || week_day === 0 || week_day === 5 || week_day === 6){
         dropdown.value = "today";
         loadSchedule("today");
     } else {
-        dropdown.value = "this_week";
-        loadSchedule("this_week");
+        dropdown.value = "tomorrow";
+        loadSchedule("tomorrow");
     }
     dropdown.addEventListener("change", function() {
         const selected = dropdown.value;
@@ -138,6 +141,13 @@
         const curr_day = format_date_3let_weekday(today_date);
 
         if (date_select === "today") render_table(schedule, curr_day, date_select, today_date);
+        else if (date_select === "tomorrow") {
+            tomorrow_date = new Date(today_date);
+            tomorrow_date.setDate(tomorrow_date.getDate() + 1);
+            
+            render_table(schedule, format_date_3let_weekday(tomorrow_date), date_select, today_date);
+        }
+
         else {
             days.forEach(day => {
                 render_table(schedule, day, date_select, today_date);
@@ -169,7 +179,11 @@
         const tbody = document.createElement("tbody");
 
         week2 = "";
-        if (date_select === "today" || date_select === "this_week") week = get_curr_week(today_date);
+        if (date_select === "today" ||
+            date_select === "tomorrow" ||
+            date_select === "this_week") {
+            week = get_curr_week(today_date);
+        }
         else if (date_select === "next_week") week = get_curr_week(today_date) === "even" ? "odd": "even"; 
         else if (date_select === "week_1_3") week = "odd";
         else if (date_select === "week_2_4") week = "even";
@@ -186,7 +200,7 @@
             if (day === format_date_3let_weekday(today_date)){ //підкреслити сьогоднішній день тижня в розкладі на тиждень
                 caption.classList.add("underline_b_i");
             }
-            if (date_select !== "today"){ //не показувати день тиижня над таблицею якщо вибрано 'сьогодні'
+            if (date_select !== "today"){ //не показувати день тиижня над таблицею якщо вибрано 'сьогодні' або завтра
                 table.appendChild(caption);
             }
             if(lesson.weeks === week || lesson.weeks === week2 || lesson.weeks === "all") {
@@ -214,7 +228,6 @@
         return date.toLocaleString("en-UK", {weekday:"short"}).toLowerCase();
     }
     function is_time_in_range(lesson_time, curr_date) {
-
         const start = lesson_time.split("-")[0].split(":");
         const end = lesson_time.split("-")[1].split(":");
         
