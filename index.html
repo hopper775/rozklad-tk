@@ -32,11 +32,12 @@
     th:nth-child(4), td:nth-child(4) { width: 10%; }  /* Аудиторія */
     th:nth-child(5), td:nth-child(5) { width: 15%; }  /* Викладач */
 
-    #date_dropdown{
+    .dropdowns{
         width: 230px;
         height: 50px;
         font-size: 20px;
         margin-bottom: 20px;
+        text-align: center;
     }
     .noscale {
         -webkit-text-size-adjust: none;
@@ -60,8 +61,8 @@
 <p style="font-size:150%;text-align:center;" id="week-date"></p>
 
 
-<div style="text-align:center">
-    <select style="text-align:center;" name="День" id="date_dropdown">
+<div style="text-align: center;">
+    <select class="dropdowns" name="День" id="date_dropdown">
         <option value="today">Сьогодні</option>
         <option value="tomorrow">Завтра</option>
         <option value="this_week">Поточний тиждень</option>
@@ -71,6 +72,14 @@
         <option value="week_all">Весь розклад (1,2,3,4)</option>
     </select>
 </div>
+
+<div style="text-align: center;">
+    <select class="dropdowns" name="Тривальсть пар" id="time_dropdoen">
+        <option value="normel">Звичайні</option>
+        <option value="short">Скорочені</option>
+    </select>
+</div>
+
 
 <div class="noscale" id="table"></div>
 
@@ -89,39 +98,88 @@
 <script>
     const BASE_MONDAY = new Date(2025, 8, 1) // дата ПОНЕДІЛКА першого тижня (рік, місяці[0-11], день)
                                              // 1 вересня
-    const OFFSET = 5; //за скільки хв до початку пари ряд таблиці виділиться
-                      //та скільки хв пара буде виділена після кінця
+
+    const OFFSET = 5;                        // за скільки хв до початку пари ряд таблиці виділиться
+                                             // та скільки хв пара буде виділена після кінця
+
+    const DEFAULT_LESSON_LEN = true;         // true  - скорочені пари, false - звичайні
 
     //const today_date = new Date(2025, 9, 3, 22, 0);
     const today_date = new Date();
+    let cached_schedule = null;
 
     DAY_NAMES_UA = {mon:'Понеділок', tue:'Вівторок', wed:'Середа', thu:'Четвер', fri:'Пʼятниця'};
-    const table_cont = document.getElementById("table");
+    SHORTENND_LESSON_TIME = {
+        "8:00-9:20": "8:00-9:00",
+        "9:30-10:50": "9:10-10:10",
+        "11:10-12:30": "10:30-11:30",
+        "12:40-14:00": "11:40-12:40",
+        "14:10-15:30": "12:50-13:50",
+        "15:40-17:00": "14:00-15:00",
+        "17:10-18:30": "15:10-16:10",
+        "18:40-20:00": "16:20-17:20"
+    };
+    
+    main();
 
-    const date_UA = format_date_UA(today_date);
-    const week_UA = get_curr_week(today_date) === "even" ? "Тиждень 2,4 (знаменник)": "Тиждень 1,3 (чисельник)"
-    document.getElementById("week-date").innerHTML = `<i>Сьогодні ${date_UA}. ${week_UA}</i>`;
+    function main() {
+        const table_cont = document.getElementById("table");
+        const date_dropdown = document.getElementById("date_dropdown");
+        const lesson_time_dropdown = document.getElementById("time_dropdoen");
 
-    const week_day = today_date.getDay(); 
-    // якщо сьогодні пн - вт та не пізніше 20;30 то буде розклад на сьогодні. Після 20;30 буде розкладна на завтра
-    // якщо субота, неділя або п'тниця незалежно від часу буде розклад на сьогодні
-    const dropdown = document.getElementById("date_dropdown");
-    if (is_time_in_range("00:00-20:30", today_date) || week_day === 0 || week_day === 5 || week_day === 6){
-        dropdown.value = "today";
-        loadSchedule("today");
-    } else {
-        dropdown.value = "tomorrow";
-        loadSchedule("tomorrow");
+        const date_UA = format_date_UA(today_date);
+        const week_UA = get_curr_week(today_date) === "even" ? "Тиждень 2,4 (знаменник)": "Тиждень 1,3 (чисельник)"
+        document.getElementById("week-date").innerHTML = `<i>Сьогодні ${date_UA}. ${week_UA}</i>`;
+
+        const week_day = today_date.getDay();
+        
+        // якщо сьогодні пн - вт та не пізніше 20;30 то буде розклад на сьогодні. Після 20;30 буде розкладна на завтра
+        // якщо субота, неділя або п'тниця незалежно від часу буде розклад на сьогодні
+        if (is_time_in_range("00:00-20:30", today_date) || week_day === 0 || week_day === 5 || week_day === 6){
+            date_dropdown.value = "today";
+            date_select = "today";
+        } else {
+            date_dropdown.value = "tomorrow";
+            date_select = "tomorrow";
+        }
+        
+        if (DEFAULT_LESSON_LEN) {
+            lesson_time_dropdown.value = "short";
+            shortend_lessons = true;
+        }
+        else {
+            lesson_time_dropdown.value = "normel";
+            shortend_lessons = false;
+        }
+
+        date_dropdown.addEventListener("change", function() {
+            date_select = date_dropdown.value;
+            
+            update_schedule();
+        })
+        lesson_time_dropdown.addEventListener("change", function () {
+            if (lesson_time_dropdown.value === "short"){
+                shortend_lessons = true;
+            }
+            else {
+                shortend_lessons = false;
+            }
+
+            update_schedule();
+        })
+        update_schedule();
+        function update_schedule(){
+            table_cont.innerHTML = ''; //очищує таблицю
+            loadSchedule(date_select, shortend_lessons);
+        }
     }
-    dropdown.addEventListener("change", function() {
-        const selected = dropdown.value;
-        table_cont.innerHTML = ''; //очищує таблицю
-        loadSchedule(selected);
-    })
-
-    async function loadSchedule(date_select){
-        const response = await fetch("schedule.json");
-        const schedule = await response.json();
+    
+    async function loadSchedule(date_select, shortend_lessons){
+        if (cached_schedule === null) {
+            const response = await fetch("schedule.json");
+            cached_schedule = await response.json();
+        }
+        const schedule = cached_schedule;
         const metadata = schedule["metadata"];
         const last_sync_date = new Date(metadata.Time * 1000);
         const last_sync_date_str = last_sync_date.toLocaleString('uk-UA', {
@@ -140,23 +198,25 @@
         const days = Object.keys(schedule).filter(key => key !== "metadata")
         const curr_day = format_date_3let_weekday(today_date);
 
-        if (date_select === "today") render_table(schedule, curr_day, date_select, today_date);
+        if (date_select === "today") render_table(schedule, curr_day, date_select, today_date, shortend_lessons);
         else if (date_select === "tomorrow") {
             tomorrow_date = new Date(today_date);
             tomorrow_date.setDate(tomorrow_date.getDate() + 1);
             
-            render_table(schedule, format_date_3let_weekday(tomorrow_date), date_select, today_date);
+            render_table(schedule, format_date_3let_weekday(tomorrow_date), date_select, today_date, shortend_lessons);
         }
 
         else {
             days.forEach(day => {
-                render_table(schedule, day, date_select, today_date);
+                render_table(schedule, day, date_select, today_date, shortend_lessons);
             });
         }
     }
 
 
-    function render_table(schedule, day, date_select, today_date){
+    function render_table(schedule, day, date_select, today_date, lesson_lenth){
+        const table_cont = document.getElementById("table");
+        
         const weekend_text1 = document.getElementById("weekend_text1");
         const weekend_text2 = document.getElementById("weekend_text2");
         if (!schedule[day]) {
@@ -167,7 +227,7 @@
         weekend_text1.innerHTML = ""
         weekend_text2.innerHTML = ""
         
-        lessons = schedule[day];
+        const lessons = schedule[day];
 
         const table = document.createElement("table");
         const caption = document.createElement("caption");
@@ -178,7 +238,7 @@
         table.appendChild(thead);
         const tbody = document.createElement("tbody");
 
-        week2 = "";
+        let week2 = "";
         if (date_select === "today" ||
             date_select === "tomorrow" ||
             date_select === "this_week") {
@@ -200,12 +260,16 @@
             if (day === format_date_3let_weekday(today_date)){ //підкреслити сьогоднішній день тижня в розкладі на тиждень
                 caption.classList.add("underline_b_i");
             }
-            if (date_select !== "today"){ //не показувати день тиижня над таблицею якщо вибрано 'сьогодні' або завтра
+            if (date_select !== "today"){ //не показувати день тиижня над таблицею якщо вибрано 'сьогодні'
                 table.appendChild(caption);
+            }
+            lesson_time = lesson.time;
+            if (lesson_lenth) {
+                lesson_time = SHORTENND_LESSON_TIME[lesson.time];
             }
             if(lesson.weeks === week || lesson.weeks === week2 || lesson.weeks === "all") {
                 tr.innerHTML = `<td>${parseInt(lesson.num)}</td>
-                                <td>${lesson.time}</td>
+                                <td>${lesson_time}</td>
                                 <td>${lesson.subject}</td>
                                 <td>${lesson.room}</td>
                                 <td>${lesson.teacher}</td>`;
@@ -240,6 +304,7 @@
         
         return curr_date > start_date && curr_date < end_date;
     }
+    
 </script>
 
 </body>
