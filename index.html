@@ -254,7 +254,12 @@
 
         lessons.forEach(lesson => {
             const tr = document.createElement('tr');
-            if (day === format_date_3let_weekday(today_date) && is_time_in_range(lesson.time, today_date)) {
+            lesson_time = lesson.time;
+            if (lesson_lenth) {
+                lesson_time = SHORTENND_LESSON_TIME[lesson.time];
+            }
+         
+            if (day === format_date_3let_weekday(today_date) && is_time_in_range(lesson_time, today_date)) {
                 tr.classList.add("highilight"); //підкреслити поточну пару
             }
             if (day === format_date_3let_weekday(today_date)){ //підкреслити сьогоднішній день тижня в розкладі на тиждень
@@ -263,10 +268,7 @@
             if (date_select !== "today"){ //не показувати день тиижня над таблицею якщо вибрано 'сьогодні'
                 table.appendChild(caption);
             }
-            lesson_time = lesson.time;
-            if (lesson_lenth) {
-                lesson_time = SHORTENND_LESSON_TIME[lesson.time];
-            }
+            
             if(lesson.weeks === week || lesson.weeks === week2 || lesson.weeks === "all") {
                 tr.innerHTML = `<td>${parseInt(lesson.num)}</td>
                                 <td>${lesson_time}</td>
