@@ -47,11 +47,13 @@ def parse_dataframe(df):
                     "teacher": teacher,
                     "weeks": weeks
                 })
+                
                 #ігнорує дивні дублікати останньої пари 
-                if day_schedule and day_schedule[-1]["subject"] == lessons["subject"]:
-                    pass
-                else:
-                    day_schedule.append(lessons)
+                #if day_schedule and day_schedule[-1]["num"] == lessons["num"]:
+                #    pass
+                #else:
+                day_schedule.append(lessons)
+                
             row += 2
             
         result[day] =  day_schedule
@@ -86,7 +88,7 @@ def get_sheet(url):
     return sheet
     
 if __name__=="__main__":
-    G_sheets_url = "https://docs.google.com/spreadsheets/d/1vlTtXPE-qQAIYi4Z0ilEeQbiZ3Lfh2504iCMLeWURO8/export?gid=743307244&format=xlsx"
+    G_sheets_url = "https://docs.google.com/spreadsheets/d/1SU2Y5o8zzJsYwzvu07GkFWv0zHRNxytFFmRLUXfyYYk/export?gid=743307244&format=xlsx"
     
     try:
         sheet = get_sheet(G_sheets_url)
